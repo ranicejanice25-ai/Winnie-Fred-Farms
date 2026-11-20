@@ -3,7 +3,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-/** Modal login dialog. Submits the credentials to AuthManager. */
+/** Modal, honey-themed login dialog. Submits the credentials to AuthManager. */
 public class LoginWindow extends JDialog {
     private String username;
     private String password;
@@ -12,9 +12,9 @@ public class LoginWindow extends JDialog {
     private final AuthManager authManager;
     private final JTextField txtUsername = new JTextField(15);
     private final JPasswordField txtPassword = new JPasswordField(15);
-    private final JButton cmdLogin = new JButton("Login");
-    private final JButton cmdClear = new JButton("Clear");
-    private final JButton cmdCancel = new JButton("Cancel");
+    private final JButton cmdLogin = new Theme.HoneyButton("Login");
+    private final JButton cmdClear = new Theme.HoneyButton("Clear");
+    private final JButton cmdCancel = new Theme.HoneyButton("Cancel");
     private final JLabel lblMessage = new JLabel(" ");
 
     public LoginWindow(Frame owner, AuthManager authManager) {
@@ -54,22 +54,34 @@ public class LoginWindow extends JDialog {
     public boolean isLoggedIn() { return loggedIn; }
 
     private void buildGui() {
-        setLayout(new BorderLayout(8, 8));
-        JPanel form = new JPanel(new GridLayout(2, 2, 6, 6));
-        form.setBorder(BorderFactory.createEmptyBorder(12, 12, 0, 12));
-        form.add(new JLabel("Username:")); form.add(txtUsername);
-        form.add(new JLabel("Password:")); form.add(txtPassword);
+        Theme.HoneycombPanel root = new Theme.HoneycombPanel(new BorderLayout(8, 8));
+        setContentPane(root);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        Theme.styleField(txtUsername);
+        Theme.styleField(txtPassword);
+
+        JPanel form = new JPanel(new GridLayout(2, 2, 8, 10));
+        form.setOpaque(false);
+        form.setBorder(BorderFactory.createEmptyBorder(16, 20, 4, 20));
+        form.add(Theme.label("Username:")); form.add(txtUsername);
+        form.add(Theme.label("Password:")); form.add(txtPassword);
+
+        lblMessage.setFont(Theme.BODY_BOLD);
+        lblMessage.setForeground(Theme.ERROR);
+        lblMessage.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        buttons.setOpaque(false);
         buttons.add(cmdLogin); buttons.add(cmdClear); buttons.add(cmdCancel);
 
         JPanel south = new JPanel(new BorderLayout());
-        south.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 0));
+        south.setOpaque(false);
         south.add(lblMessage, BorderLayout.NORTH);
         south.add(buttons, BorderLayout.SOUTH);
 
-        add(form, BorderLayout.CENTER);
-        add(south, BorderLayout.SOUTH);
+        root.add(Theme.header("Winnie-Fred Farms", "Sign in to the hive"), BorderLayout.NORTH);
+        root.add(form, BorderLayout.CENTER);
+        root.add(south, BorderLayout.SOUTH);
 
         cmdLogin.addActionListener(new LoginButtonListener());
         cmdClear.addActionListener(new ClearButtonListener());
@@ -77,6 +89,7 @@ public class LoginWindow extends JDialog {
         txtPassword.addActionListener(new LoginButtonListener()); // Enter key
         getRootPane().setDefaultButton(cmdLogin);
 
+        setResizable(false);
         pack();
         setLocationRelativeTo(getOwner());
     }

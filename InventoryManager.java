@@ -5,6 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -32,11 +34,13 @@ public class InventoryManager extends JFrame {
     private final JTextField txtItem = new JTextField(12);
     private final JTextField txtQuantity = new JTextField(6);
     private final JTextField txtUnitPrice = new JTextField(6);
-    private final JButton cmdAdd = new JButton("Add");
-    private final JButton cmdRemove = new JButton("Remove");
-    private final JButton cmdSortDate = new JButton("Sort by Date");
-    private final JButton cmdSortAmount = new JButton("Sort by Amount");
-    private final JButton cmdClose = new JButton("Close");
+    private final JTextField txtDate = new JTextField(LocalDate.now().toString(), 9);
+    private final JButton cmdAdd = new Theme.HoneyButton("Add");
+    private final JButton cmdUpdatePrice = new Theme.HoneyButton("Update Price");
+    private final JButton cmdRemove = new Theme.HoneyButton("Remove");
+    private final JButton cmdSortDate = new Theme.HoneyButton("Sort by Date");
+    private final JButton cmdSortAmount = new Theme.HoneyButton("Sort by Amount");
+    private final JButton cmdClose = new Theme.HoneyButton("Close");
     private final JLabel lblStatus = new JLabel(" ");
     private final DefaultTableModel model = new DefaultTableModel(
             new String[]{"ID", "Item", "Quantity", "Unit Price", "Date Updated", "Status"}, 0) {
@@ -57,11 +61,16 @@ public class InventoryManager extends JFrame {
 
     /** Adds a new batch. If the item already exists, the quantity is added to the existing stock. */
     public boolean addInventory(String itemName, int quantity, float unitPrice) {
+        return addInventory(itemName, quantity, unitPrice, new Date());
+    }
+
+    /** Same as above, using the harvest/batch date entered by the user. */
+    public boolean addInventory(String itemName, int quantity, float unitPrice, Date batchDate) {
         if (!db.isConnected()) return false;
         if (!isValidItem(itemName, quantity, unitPrice) || quantity == 0) return false;
 
         String name = itemName.trim();
-        java.sql.Date today = new java.sql.Date(new Date().getTime());
+        java.sql.Date day = new java.sql.Date(batchDate.getTime());
 
         InventoryItem existing = null;
         int maxId = 0;
@@ -74,13 +83,13 @@ public class InventoryManager extends JFrame {
         if (existing != null) {
             ok = db.updateRecord(
                     "UPDATE inventory SET quantity = ?, unitPrice = ?, dateUpdated = ? WHERE inventoryID = ?",
-                    existing.getQuantity() + quantity, unitPrice, today, existing.getInventoryID());
+                    existing.getQuantity() + quantity, unitPrice, day, existing.getInventoryID());
         } else {
             ok = db.insertRecord(
                     "INSERT INTO inventory (inventoryID, itemName, quantity, unitPrice, dateUpdated) VALUES (?,?,?,?,?)",
-                    maxId + 1, name, quantity, unitPrice, today);
+                    maxId + 1, name, quantity, unitPrice, day);
         }
-        if (ok) { this.itemName = name; this.quantity = quantity; this.unitPrice = unitPrice; this.dateUpdated = today; }
+        if (ok) { this.itemName = name; this.quantity = quantity; this.unitPrice = unitPrice; this.dateUpdated = day; }
         return ok;
     }
 
@@ -159,6 +168,47 @@ public class InventoryManager extends JFrame {
                 : items.size() + " record(s) loaded.");
     }
 
+    /** Whole number greater than zero. Shows the matching error message and returns null if invalid. */
+    private Integer parseQuantity(String text) {
+        try {
+            int q = Integer.parseInt(text);
+            if (q < 0) { showError("Quantity cannot be negative."); return null; }
+            if (q == 0) { showError("Quantity must be greater than zero."); return null; }
+            return q;
+        } catch (NumberFormatException ex) {
+            try {
+                Double.parseDouble(text);
+                showError("Quantity must be a whole number of bottles.");
+            } catch (NumberFormatException ex2) {
+                showError("Quantity must be numeric.");
+            }
+            return null;
+        }
+    }
+
+    /** Non-negative number. label is "Unit price" or "Unit cost" so the message matches the screen. */
+    private Float parsePrice(String text, String label) {
+        try {
+            float p = Float.parseFloat(text);
+            if (Float.isNaN(p) || Float.isInfinite(p)) { showError(label + " must be a valid number."); return null; }
+            if (p < 0) { showError(label + " cannot be negative."); return null; }
+            return p;
+        } catch (NumberFormatException ex) {
+            showError(label + " must be numeric.");
+            return null;
+        }
+    }
+
+    /** yyyy-MM-dd. Future dates are allowed (e.g. a planned harvest batch). */
+    private Date parseDate(String text) {
+        try {
+            return java.sql.Date.valueOf(LocalDate.parse(text));
+        } catch (DateTimeParseException ex) {
+            showError("Date must be a valid date in the format yyyy-MM-dd (e.g. 2026-12-12).");
+            return null;
+        }
+    }
+
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
@@ -169,62 +219,124 @@ public class InventoryManager extends JFrame {
 
     private void buildGui() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout(8, 8));
+        Theme.HoneycombPanel root = new Theme.HoneycombPanel(new BorderLayout(8, 8));
+        root.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        setContentPane(root);
 
-        JPanel pnlInput = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pnlInput.add(new JLabel("Item:"));       pnlInput.add(txtItem);
-        pnlInput.add(new JLabel("Quantity:"));   pnlInput.add(txtQuantity);
-        pnlInput.add(new JLabel("Unit Price:")); pnlInput.add(txtUnitPrice);
-        pnlInput.add(cmdAdd);
+        for (JTextField f : new JTextField[]{txtItem, txtQuantity, txtUnitPrice, txtDate}) Theme.styleField(f);
+        Theme.styleTable(table);
+        lblStatus.setFont(Theme.BODY);
+        lblStatus.setForeground(Theme.BROWN);
 
-        JPanel pnlCommand = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel pnlFields = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 10));
+        pnlFields.setOpaque(false);
+        pnlFields.add(Theme.label("Item:"));                 pnlFields.add(txtItem);
+        pnlFields.add(Theme.label("Quantity:"));             pnlFields.add(txtQuantity);
+        pnlFields.add(Theme.label("Unit Price:"));           pnlFields.add(txtUnitPrice);
+        pnlFields.add(Theme.label("Date (yyyy-MM-dd):"));    pnlFields.add(txtDate);
+
+        JPanel pnlActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        pnlActions.setOpaque(false);
+        pnlActions.add(cmdAdd);
+        pnlActions.add(cmdUpdatePrice);
+
+        JPanel pnlInput = new JPanel(new BorderLayout());
+        pnlInput.setOpaque(false);
+        pnlInput.add(pnlFields, BorderLayout.NORTH);
+        pnlInput.add(pnlActions, BorderLayout.CENTER);
+        pnlInput.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+        JPanel pnlTop = new JPanel(new BorderLayout());
+        pnlTop.setOpaque(false);
+        pnlTop.add(Theme.header("Inventory Manager", "Honey stock and prices"), BorderLayout.NORTH);
+        pnlTop.add(pnlInput, BorderLayout.CENTER);
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.getViewport().setBackground(Theme.CREAM);
+        scroll.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(0, 10, 0, 10),
+                BorderFactory.createLineBorder(Theme.BROWN, 2)));
+
+        JPanel pnlCommand = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        pnlCommand.setOpaque(false);
         pnlCommand.add(cmdRemove);
         pnlCommand.add(cmdSortDate);
         pnlCommand.add(cmdSortAmount);
         pnlCommand.add(cmdClose);
 
         JPanel pnlBottom = new JPanel(new BorderLayout());
+        pnlBottom.setOpaque(false);
+        pnlBottom.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
         pnlBottom.add(lblStatus, BorderLayout.WEST);
         pnlBottom.add(pnlCommand, BorderLayout.EAST);
 
-        add(pnlInput, BorderLayout.NORTH);
-        add(new JScrollPane(table), BorderLayout.CENTER);
-        add(pnlBottom, BorderLayout.SOUTH);
+        root.add(pnlTop, BorderLayout.NORTH);
+        root.add(scroll, BorderLayout.CENTER);
+        root.add(pnlBottom, BorderLayout.SOUTH);
 
         cmdAdd.addActionListener(new AddInventoryListener());
+        cmdUpdatePrice.addActionListener(new UpdatePriceListener());
         cmdRemove.addActionListener(new RemoveInventoryListener());
         cmdSortDate.addActionListener(new SortDateListener());
         cmdSortAmount.addActionListener(new SortAmountListener());
         cmdClose.addActionListener(new CloseButtonListener());
 
-        setSize(780, 420);
+        setSize(900, 500);
         setLocationRelativeTo(null);
     }
 
+    /** Validates the form (TC-01.01 / 01.02 / 01.03) and adds the batch. */
     private class AddInventoryListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             String name = txtItem.getText().trim();
-            if (name.isEmpty() || txtQuantity.getText().trim().isEmpty() || txtUnitPrice.getText().trim().isEmpty()) {
-                showError("Please fill in item, quantity and unit price.");
-                return;
-            }
-            int qty;
-            float price;
-            try {
-                qty = Integer.parseInt(txtQuantity.getText().trim());
-                price = Float.parseFloat(txtUnitPrice.getText().trim());
-            } catch (NumberFormatException ex) {
-                showError("Quantity and unit price must be numeric.");
-                return;
-            }
-            if (qty <= 0) { showError("Quantity must be greater than zero."); return; }
-            if (price < 0) { showError("Unit price cannot be negative."); return; }
+            String qtyText = txtQuantity.getText().trim();
+            String priceText = txtUnitPrice.getText().trim();
+            String dateText = txtDate.getText().trim();
 
-            if (addInventory(name, qty, price)) {
-                txtItem.setText(""); txtQuantity.setText(""); txtUnitPrice.setText("");
+            if (name.isEmpty() || qtyText.isEmpty() || priceText.isEmpty() || dateText.isEmpty()) {
+                showError("Please fill in item, quantity, unit price and date.");
+                return;
+            }
+            Integer qty = parseQuantity(qtyText);
+            if (qty == null) return;
+            Float price = parsePrice(priceText, "Unit price");
+            if (price == null) return;
+            Date batchDate = parseDate(dateText);
+            if (batchDate == null) return;
+
+            if (addInventory(name, qty, price, batchDate)) {
+                txtItem.setText("");
+                txtQuantity.setText("");
+                txtUnitPrice.setText("");
+                txtDate.setText(LocalDate.now().toString());
                 refreshTable(retrieveInventory());
+                lblStatus.setText("Saved " + qty + " x " + name + ".");
             } else {
                 showError("Could not save the record. Check the database connection.");
+                refreshTable(retrieveInventory());
+            }
+        }
+    }
+
+    /** Changes the unit cost of the selected record (TC-01.05 / 01.06). */
+    private class UpdatePriceListener implements ActionListener {
+        @Override public void actionPerformed(ActionEvent e) {
+            int row = table.getSelectedRow();
+            if (row < 0) { showError("Select a record to update."); return; }
+
+            String priceText = txtUnitPrice.getText().trim();
+            if (priceText.isEmpty()) { showError("Enter the new unit cost in the Unit Price box."); return; }
+            Float price = parsePrice(priceText, "Unit cost");
+            if (price == null) return; // invalid input: stored price stays unchanged
+
+            int id = (Integer) model.getValueAt(row, 0);
+            int qty = (Integer) model.getValueAt(row, 2);
+            if (updateInventory(id, qty, price)) {
+                txtUnitPrice.setText("");
+                refreshTable(retrieveInventory());
+                lblStatus.setText("Unit cost updated.");
+            } else {
+                showError("Could not update the unit cost. Check the database connection.");
                 refreshTable(retrieveInventory());
             }
         }

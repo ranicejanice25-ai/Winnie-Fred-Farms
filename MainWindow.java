@@ -3,7 +3,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-/** Main menu. Opens the login window first and only enables features after authentication. */
+/** Honey-themed main menu. Opens the login window first and only enables features after authentication. */
 public class MainWindow extends JFrame {
     private User currentUser;
     private boolean isAuthenticated = false;
@@ -11,15 +11,15 @@ public class MainWindow extends JFrame {
     private final AuthManager authManager;
     private final DatabaseManager db;
 
-    private final JButton cmdClose = new JButton("Close");
-    private final JPanel pnlDisplay = new JPanel(new GridLayout(0, 1, 8, 8));
+    private final JButton cmdClose = new Theme.HoneyButton("Close");
+    private final JPanel pnlDisplay = new JPanel(new GridLayout(0, 1, 10, 10));
     private final JPanel pnlCommand = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-    private final JButton cmdInventory = new JButton("Inventory");
-    private final JButton cmdOrders = new JButton("Orders");
-    private final JButton cmdInvoices = new JButton("Invoices");
-    private final JButton cmdReceipts = new JButton("Receipts");
-    private final JButton cmdReports = new JButton("Sales Reports");
+    private final JButton cmdInventory = new Theme.HoneyButton("Inventory");
+    private final JButton cmdOrders = new Theme.HoneyButton("Orders");
+    private final JButton cmdInvoices = new Theme.HoneyButton("Invoices");
+    private final JButton cmdReceipts = new Theme.HoneyButton("Receipts");
+    private final JButton cmdReports = new Theme.HoneyButton("Sales Reports");
 
     public MainWindow(DatabaseManager db, AuthManager authManager) {
         super("Winnie-Fred Farms");
@@ -27,11 +27,17 @@ public class MainWindow extends JFrame {
         this.authManager = authManager;
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setLayout(new BorderLayout(8, 8));
-        pnlDisplay.setBorder(BorderFactory.createEmptyBorder(16, 40, 16, 40));
+        Theme.HoneycombPanel root = new Theme.HoneycombPanel(new BorderLayout(8, 8));
+        setContentPane(root);
+
+        pnlDisplay.setOpaque(false);
+        pnlDisplay.setBorder(BorderFactory.createEmptyBorder(16, 50, 8, 50));
+        pnlCommand.setOpaque(false);
         pnlCommand.add(cmdClose);
-        add(pnlDisplay, BorderLayout.CENTER);
-        add(pnlCommand, BorderLayout.SOUTH);
+
+        root.add(Theme.header("Winnie-Fred Farms", "Fresh from the hive"), BorderLayout.NORTH);
+        root.add(pnlDisplay, BorderLayout.CENTER);
+        root.add(pnlCommand, BorderLayout.SOUTH);
 
         CloseButtonListener closeListener = new CloseButtonListener();
         cmdClose.addActionListener(closeListener);
@@ -44,7 +50,7 @@ public class MainWindow extends JFrame {
             b.addActionListener(new OtherModuleListener(b.getText()));
         }
 
-        setSize(380, 360);
+        setSize(400, 470);
         setLocationRelativeTo(null);
     }
 
@@ -67,9 +73,10 @@ public class MainWindow extends JFrame {
     public void displayMenu() {
         pnlDisplay.removeAll();
         String who = currentUser == null ? "" : currentUser.getUsername();
-        JLabel title = new JLabel("Welcome, " + who, SwingConstants.CENTER);
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
-        pnlDisplay.add(title);
+        JLabel welcome = new JLabel("Welcome, " + who, SwingConstants.CENTER);
+        welcome.setFont(Theme.TITLE.deriveFont(18f));
+        welcome.setForeground(Theme.DARK);
+        pnlDisplay.add(welcome);
         pnlDisplay.add(cmdInventory);
         pnlDisplay.add(cmdOrders);
         pnlDisplay.add(cmdInvoices);
