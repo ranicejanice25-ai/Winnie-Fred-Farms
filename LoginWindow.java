@@ -32,6 +32,10 @@ public class LoginWindow extends JDialog {
             lblMessage.setText("Enter both username and password.");
             return false;
         }
+        if (!authManager.isDatabaseConnected()) {
+            lblMessage.setText("Cannot reach the database - check the connection.");
+            return false;
+        }
         if (authManager.verifyUser(username, password)) {
             authManager.startSession();
             loggedIn = true;
@@ -67,7 +71,7 @@ public class LoginWindow extends JDialog {
         form.add(Theme.label("Password:")); form.add(txtPassword);
 
         lblMessage.setFont(Theme.BODY_BOLD);
-        lblMessage.setForeground(Theme.ERROR);
+        lblMessage.setForeground(Theme.DANGER);
         lblMessage.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));

@@ -36,6 +36,8 @@ public class AuthManager {
 
     public void endSession() { sessionActive = false; currentUser = null; }
 
+    public boolean isDatabaseConnected() { return db.isConnected(); }
+
     public User getCurrentUser() { return currentUser; }
     public boolean isSessionActive() { return sessionActive; }
 

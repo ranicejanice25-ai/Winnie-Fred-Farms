@@ -14,7 +14,7 @@ public final class Theme {
     public static final Color CREAM = new Color(0xFFF6DC);   // background
     public static final Color WAX   = new Color(0xFFE9A8);   // alternate rows
     public static final Color COMB  = new Color(0xF6DFA0);   // honeycomb lines
-    public static final Color ERROR = new Color(0x9B2C1A);
+    public static final Color DANGER = new Color(0x9B2C1A);
 
     public static final Font TITLE = new Font(Font.SERIF, Font.BOLD, 22);
     public static final Font BODY = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
@@ -106,7 +106,7 @@ public final class Theme {
                 l.setBorder(new EmptyBorder(0, 6, 0, 6));
                 l.setBackground(sel ? AMBER : (row % 2 == 0 ? CREAM : WAX));
                 boolean out = "Out of Stock".equals(v);
-                l.setForeground(out && !sel ? ERROR : DARK);
+                l.setForeground(out && !sel ? DANGER : DARK);
                 l.setFont(out ? BODY_BOLD : BODY);
                 return l;
             }

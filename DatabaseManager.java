@@ -18,10 +18,23 @@ public class DatabaseManager {
             connection = DriverManager.getConnection(connectionString);
             connectionStatus = true;
         } catch (SQLException e) {
-            System.err.println("Connection failed: " + e.getMessage());
+            System.err.println("Connection failed: " + e.getMessage()
+                    + "  (is the sqlite-jdbc jar in the lib folder / project libraries?)");
             connectionStatus = false;
         }
         return connectionStatus;
+    }
+
+    /** Runs a statement that returns no rows (CREATE TABLE etc.). */
+    public boolean runSql(String sql) {
+        if (!connectionStatus) return false;
+        try (Statement st = connection.createStatement()) {
+            st.execute(sql);
+            return true;
+        } catch (SQLException e) {
+            System.err.println("SQL failed: " + e.getMessage());
+            return false;
+        }
     }
 
     public boolean insertRecord(String sql, Object... params) { return execute(sql, params); }
