@@ -6,6 +6,7 @@ public class DatabaseManager {
     private String databaseName;
     private boolean connectionStatus;
     private Connection connection;
+    private String lastError = "";
 
     public DatabaseManager(String connectionString, String databaseName) {
         this.connectionString = connectionString;
@@ -17,7 +18,9 @@ public class DatabaseManager {
         try {
             connection = DriverManager.getConnection(connectionString);
             connectionStatus = true;
+            lastError = "";
         } catch (SQLException e) {
+            lastError = e.getMessage();
             System.err.println("Connection failed: " + e.getMessage()
                     + "  (is the sqlite-jdbc jar in the lib folder / project libraries?)");
             connectionStatus = false;
@@ -25,14 +28,14 @@ public class DatabaseManager {
         return connectionStatus;
     }
 
-    /** Runs a statement that returns no rows (CREATE TABLE etc.). */
     public boolean runSql(String sql) {
-        if (!connectionStatus) return false;
+        if (!connectionStatus) { lastError = "not connected"; return false; }
         try (Statement st = connection.createStatement()) {
             st.execute(sql);
             return true;
         } catch (SQLException e) {
-            System.err.println("SQL failed: " + e.getMessage());
+            lastError = e.getMessage();
+            System.err.println("SQL failed: " + e.getMessage() + " [SQL=" + sql + "]");
             return false;
         }
     }
@@ -42,24 +45,26 @@ public class DatabaseManager {
     public boolean deleteRecord(String sql, Object... params) { return execute(sql, params); }
 
     public ResultSet retrieveRecord(String sql, Object... params) {
-        if (!connectionStatus) return null;
+        if (!connectionStatus) { lastError = "not connected"; return null; }
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             bind(ps, params);
             return ps.executeQuery();
         } catch (SQLException e) {
-            System.err.println("Query failed: " + e.getMessage());
+            lastError = e.getMessage();
+            System.err.println("Query failed: " + e.getMessage() + " [SQL=" + sql + "]");
             return null;
         }
     }
 
     private boolean execute(String sql, Object... params) {
-        if (!connectionStatus) return false;
+        if (!connectionStatus) { lastError = "not connected"; return false; }
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             bind(ps, params);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("Statement failed: " + e.getMessage());
+            lastError = e.getMessage();
+            System.err.println("Statement failed: " + e.getMessage() + " [SQL=" + sql + "]");
             return false;
         }
     }
@@ -70,4 +75,5 @@ public class DatabaseManager {
 
     public String getDatabaseName() { return databaseName; }
     public boolean isConnected() { return connectionStatus; }
+    public String getLastError() { return lastError; }
 }

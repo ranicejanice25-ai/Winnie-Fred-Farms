@@ -12,25 +12,18 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
-/**
- * InventoryManager (Winnie-Fred Farms) - window + logic for managing inventory.
- * Attributes, buttons/listeners and methods follow the class diagram and the Classes table.
- */
 public class InventoryManager extends JFrame {
 
-    // ---- attributes from the class diagram (current record) ----
     private int inventoryID;
     private String itemName;
     private int quantity;
     private float unitPrice;
     private Date dateUpdated;
 
-    // ---- collaborators / state ----
     private final DatabaseManager db;
-    private final List<InventoryItem> cache = new ArrayList<>(); // last good copy (offline view)
+    private final List<InventoryItem> cache = new ArrayList<>();
     private boolean usingCache = false;
 
-    // ---- GUI components ----
     private final JTextField txtItem = new JTextField(12);
     private final JTextField txtQuantity = new JTextField(6);
     private final JTextField txtUnitPrice = new JTextField(6);
@@ -55,16 +48,10 @@ public class InventoryManager extends JFrame {
         refreshTable(retrieveInventory());
     }
 
-    // =====================================================================
-    //  Methods from the class diagram
-    // =====================================================================
-
-    /** Adds a new batch. If the item already exists, the quantity is added to the existing stock. */
     public boolean addInventory(String itemName, int quantity, float unitPrice) {
         return addInventory(itemName, quantity, unitPrice, new Date());
     }
 
-    /** Same as above, using the harvest/batch date entered by the user. */
     public boolean addInventory(String itemName, int quantity, float unitPrice, Date batchDate) {
         if (!db.isConnected()) return false;
         if (!isValidItem(itemName, quantity, unitPrice) || quantity == 0) return false;
@@ -89,17 +76,24 @@ public class InventoryManager extends JFrame {
                     "INSERT INTO inventory (inventoryID, itemName, quantity, unitPrice, dateUpdated) VALUES (?,?,?,?,?)",
                     maxId + 1, name, quantity, unitPrice, day);
         }
-        if (ok) { this.itemName = name; this.quantity = quantity; this.unitPrice = unitPrice; this.dateUpdated = day; }
+        if (ok) { 
+            this.itemName = name; this.quantity = quantity; this.unitPrice = unitPrice; this.dateUpdated = day; 
+            // SYNC PRICE: Update the price for all existing orders
+            db.updateRecord("UPDATE orders SET unitCost = ?", unitPrice);
+        }
         return ok;
     }
 
-    /** Updates quantity and unit cost of an existing record (e.g. changing a category's price). */
     public boolean updateInventory(int inventoryID, int quantity, float unitPrice) {
         if (!db.isConnected() || !isValidItem("x", quantity, unitPrice)) return false;
         boolean ok = db.updateRecord(
                 "UPDATE inventory SET quantity = ?, unitPrice = ?, dateUpdated = ? WHERE inventoryID = ?",
                 quantity, unitPrice, new java.sql.Date(new Date().getTime()), inventoryID);
-        if (ok) { this.inventoryID = inventoryID; this.quantity = quantity; this.unitPrice = unitPrice; }
+        if (ok) { 
+            this.inventoryID = inventoryID; this.quantity = quantity; this.unitPrice = unitPrice; 
+            // SYNC PRICE: Update the price for all existing orders
+            db.updateRecord("UPDATE orders SET unitCost = ?", unitPrice);
+        }
         return ok;
     }
 
@@ -108,10 +102,6 @@ public class InventoryManager extends JFrame {
         return db.deleteRecord("DELETE FROM inventory WHERE inventoryID = ?", inventoryID);
     }
 
-    /**
-     * Returns all inventory records. If the database is unreachable the last cached copy is
-     * returned instead and usingCache is set, so the screen never crashes (TC-01.08).
-     */
     public List<InventoryItem> retrieveInventory() {
         List<InventoryItem> items = new ArrayList<>();
         try (ResultSet rs = db.retrieveRecord(
@@ -134,11 +124,6 @@ public class InventoryManager extends JFrame {
         return items;
     }
 
-    // =====================================================================
-    //  Extra helpers
-    // =====================================================================
-
-    /** Called when an order is completed. Stock reaching 0 is shown as "Out of Stock" (TC-01.04). */
     public boolean deductStock(String itemName, int orderQuantity) {
         for (InventoryItem it : retrieveInventory()) {
             if (it.getItemName().equalsIgnoreCase(itemName)) {
@@ -149,7 +134,6 @@ public class InventoryManager extends JFrame {
         return false;
     }
 
-    /** Valid = non-empty name, quantity >= 0, unit price >= 0 and a real number. */
     private boolean isValidItem(String name, int qty, float price) {
         return name != null && !name.trim().isEmpty() && qty >= 0
                 && price >= 0 && !Float.isNaN(price) && !Float.isInfinite(price);
@@ -168,7 +152,6 @@ public class InventoryManager extends JFrame {
                 : items.size() + " record(s) loaded.");
     }
 
-    /** Whole number greater than zero. Shows the matching error message and returns null if invalid. */
     private Integer parseQuantity(String text) {
         try {
             int q = Integer.parseInt(text);
@@ -186,7 +169,6 @@ public class InventoryManager extends JFrame {
         }
     }
 
-    /** Non-negative number. label is "Unit price" or "Unit cost" so the message matches the screen. */
     private Float parsePrice(String text, String label) {
         try {
             float p = Float.parseFloat(text);
@@ -199,7 +181,6 @@ public class InventoryManager extends JFrame {
         }
     }
 
-    /** yyyy-MM-dd. Future dates are allowed (e.g. a planned harvest batch). */
     private Date parseDate(String text) {
         try {
             return java.sql.Date.valueOf(LocalDate.parse(text));
@@ -212,10 +193,6 @@ public class InventoryManager extends JFrame {
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
-
-    // =====================================================================
-    //  GUI + listeners
-    // =====================================================================
 
     private void buildGui() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -285,7 +262,6 @@ public class InventoryManager extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    /** Validates the form (TC-01.01 / 01.02 / 01.03) and adds the batch. */
     private class AddInventoryListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             String name = txtItem.getText().trim();
@@ -318,7 +294,6 @@ public class InventoryManager extends JFrame {
         }
     }
 
-    /** Changes the unit cost of the selected record (TC-01.05 / 01.06). */
     private class UpdatePriceListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             int row = table.getSelectedRow();
@@ -327,7 +302,7 @@ public class InventoryManager extends JFrame {
             String priceText = txtUnitPrice.getText().trim();
             if (priceText.isEmpty()) { showError("Enter the new unit cost in the Unit Price box."); return; }
             Float price = parsePrice(priceText, "Unit cost");
-            if (price == null) return; // invalid input: stored price stays unchanged
+            if (price == null) return;
 
             int id = (Integer) model.getValueAt(row, 0);
             int qty = (Integer) model.getValueAt(row, 2);
@@ -355,7 +330,6 @@ public class InventoryManager extends JFrame {
         }
     }
 
-    /** Shows records newest first. */
     private class SortDateListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             List<InventoryItem> items = retrieveInventory();
@@ -365,7 +339,6 @@ public class InventoryManager extends JFrame {
         }
     }
 
-    /** Shows records with the largest quantity first. */
     private class SortAmountListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             List<InventoryItem> items = retrieveInventory();
@@ -378,7 +351,6 @@ public class InventoryManager extends JFrame {
         @Override public void actionPerformed(ActionEvent e) { dispose(); }
     }
 
-    // ---- getters for the diagram attributes ----
     public int getInventoryID() { return inventoryID; }
     public String getItemName() { return itemName; }
     public int getQuantity() { return quantity; }

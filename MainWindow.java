@@ -46,7 +46,12 @@ public class MainWindow extends JFrame {
         });
 
         cmdInventory.addActionListener(new InventoryButtonListener());
-        for (JButton b : new JButton[]{cmdOrders, cmdInvoices, cmdReceipts, cmdReports}) {
+        
+        // Connect your Invoice Generator
+        cmdInvoices.addActionListener(e -> new InvoiceGenerator(db).setVisible(true));
+
+        // Keep the placeholders for the other unfinished modules
+        for (JButton b : new JButton[]{cmdOrders, cmdReceipts, cmdReports}) {
             b.addActionListener(new OtherModuleListener(b.getText()));
         }
 
