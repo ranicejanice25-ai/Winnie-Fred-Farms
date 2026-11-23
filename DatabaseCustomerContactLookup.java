@@ -24,7 +24,18 @@ public class DatabaseCustomerContactLookup implements CustomerContactLookup {
                     + "JOIN orders o ON o.orderID = r.orderID "
                     + "JOIN customers c ON c.customerID = o.customerID "
                     + "WHERE r.receiptID = ?";
+    
+        /** Receipts are not stored in the database yet, so look the customer up through the order instead. */
+    public static final String ORDER_SQL =
+            "SELECT c.email FROM orders o "
+                    + "JOIN customers c ON c.customerID = o.customerID "
+                    + "WHERE o.orderID = ?";
 
+    /** Use with the receipt's order ID (a receipt's own ID is not in the database). */
+    public static DatabaseCustomerContactLookup forOrders(DatabaseManager databaseManager) {
+        return new DatabaseCustomerContactLookup(databaseManager, ORDER_SQL);
+    }
+    
     private final DatabaseManager databaseManager;
     private final String sql;
 
