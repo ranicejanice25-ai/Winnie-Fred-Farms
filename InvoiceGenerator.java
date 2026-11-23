@@ -1,6 +1,8 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.sql.ResultSet;
 import java.time.LocalDate;
@@ -8,9 +10,18 @@ import java.util.Date;
 
 public class InvoiceGenerator extends JFrame {
 
+    private int invoiceID;
+    private int orderID;
+    private Date invoiceDate;
+    private float totalAmount;
+
     private final DatabaseManager db;
     private final JTable table;
     private final DefaultTableModel model;
+    
+    private final JButton cmdGenerate = new Theme.HoneyButton("Generate Invoice");
+    private final JButton cmdRefresh = new Theme.HoneyButton("Refresh");
+    private final JButton cmdClose = new Theme.HoneyButton("Close");
 
     public InvoiceGenerator(DatabaseManager db) {
         super("Winnie-Fred Farms - Invoice Generator");
@@ -22,10 +33,6 @@ public class InvoiceGenerator extends JFrame {
         };
         table = new JTable(model);
         Theme.styleTable(table);
-
-        JButton cmdGenerate = new Theme.HoneyButton("Generate Invoice");
-        JButton cmdRefresh = new Theme.HoneyButton("Refresh");
-        JButton cmdClose = new Theme.HoneyButton("Close");
 
         Theme.HoneycombPanel root = new Theme.HoneycombPanel(new BorderLayout(8, 8));
         root.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
@@ -45,17 +52,17 @@ public class InvoiceGenerator extends JFrame {
         root.add(Theme.header("Invoice Generator", "Select an order to generate an invoice"), BorderLayout.NORTH);
         root.add(scroll, BorderLayout.CENTER);
         root.add(btnPanel, BorderLayout.SOUTH);
+        
+        cmdGenerate.addActionListener(new GenerateButtonListener());
+        cmdRefresh.addActionListener(new RefreshButtonListener());
+        cmdClose.addActionListener(new CloseButtonListener());
 
-        cmdGenerate.addActionListener(e -> generateSelectedInvoice());
-        cmdRefresh.addActionListener(e -> loadOrders());
-        cmdClose.addActionListener(e -> dispose());
-
-        loadOrders();
+        retrieveOrderDetails();
         setSize(850, 450);
         setLocationRelativeTo(null);
     }
 
-    private void loadOrders() {
+    public void retrieveOrderDetails() {
         model.setRowCount(0);
         try {
             ResultSet rs = db.retrieveRecord(
@@ -92,14 +99,14 @@ public class InvoiceGenerator extends JFrame {
         }
     }
 
-    private void generateSelectedInvoice() {
+    public void generateInvoice() {
         int row = table.getSelectedRow();
         if (row < 0) {
             JOptionPane.showMessageDialog(this, "Please click on an order in the table first.");
             return;
         }
 
-        int orderID = (Integer) model.getValueAt(row, 0);
+        this.orderID = (Integer) model.getValueAt(row, 0);
         String customer = (String) model.getValueAt(row, 1);
         int qty = (Integer) model.getValueAt(row, 3);
         float price = Float.parseFloat(model.getValueAt(row, 4).toString().replace("$", ""));
@@ -133,11 +140,12 @@ public class InvoiceGenerator extends JFrame {
             try {
                 ResultSet rs = db.retrieveRecord("SELECT invoiceID, invoiceDate FROM invoices WHERE orderID = ?", orderID);
                 if (rs != null && rs.next()) {
-                    int invID = rs.getInt("invoiceID");
+                    this.invoiceID = rs.getInt("invoiceID");
                     String dateStr = rs.getString("invoiceDate");
-                    Date invDate = java.sql.Date.valueOf(dateStr);
+                    this.invoiceDate = java.sql.Date.valueOf(dateStr);
+                    this.totalAmount = total;
                     
-                    Invoice existingInv = new Invoice(invID, orderID, customer, invDate, qty, price, total);
+                    Invoice existingInv = new Invoice(invoiceID, orderID, customer, invoiceDate, qty, price, total);
                     showInvoicePopup(existingInv);
                 }
             } catch (Exception e) {
@@ -161,8 +169,12 @@ public class InvoiceGenerator extends JFrame {
             );
 
             if (success) {
-                loadOrders();
-                Invoice newInv = new Invoice(newID, orderID, customer, new Date(), qty, price, total);
+                this.invoiceID = newID;
+                this.invoiceDate = new Date();
+                this.totalAmount = total;
+                
+                retrieveOrderDetails();
+                Invoice newInv = new Invoice(invoiceID, orderID, customer, invoiceDate, qty, price, total);
                 showInvoicePopup(newInv);
             } else {
                 JOptionPane.showMessageDialog(this, "Database error. Could not generate invoice.");
@@ -173,7 +185,7 @@ public class InvoiceGenerator extends JFrame {
     }
 
     private void showInvoicePopup(Invoice inv) {
-        JDialog dialog = new JDialog(this, "Invoice #" + inv.getInvoiceID(), true);
+        final JDialog dialog = new JDialog(this, "Invoice #" + inv.getInvoiceID(), true);
         dialog.getContentPane().setBackground(Theme.CREAM);
         dialog.setLayout(new BorderLayout());
 
@@ -211,36 +223,62 @@ public class InvoiceGenerator extends JFrame {
         btnPanel.setBackground(Theme.CREAM);
         
         JButton cmdPdf = new Theme.HoneyButton("Download PDF");
-        cmdPdf.addActionListener(e -> {
-            DocumentDistributor dd = new DocumentDistributor(inv, "customer@example.com", new File("documents"));
-            try {
-                File f = dd.exportPDF();
-                JOptionPane.showMessageDialog(dialog, "PDF saved to:\n" + f.getAbsolutePath());
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Error saving PDF.");
+        cmdPdf.addActionListener(new ActionListener() {
+            @Override public void actionPerformed(ActionEvent e) {
+                DocumentDistributor dd = new DocumentDistributor(inv, "customer@example.com", new File("documents"));
+                try {
+                    File f = dd.exportPDF();
+                    JOptionPane.showMessageDialog(dialog, "PDF saved to:\n" + f.getAbsolutePath());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error saving PDF.");
+                }
             }
         });
 
         JButton cmdEmail = new Theme.HoneyButton("Email Customer");
-        cmdEmail.addActionListener(e -> {
-            DocumentDistributor dd = new DocumentDistributor(inv, "customer@example.com", new File("documents"));
-            if (dd.sendEmail()) {
-                JOptionPane.showMessageDialog(dialog, "Email sent! Check the console.");
-            } else {
-                JOptionPane.showMessageDialog(dialog, "Error: " + dd.getLastError());
+        cmdEmail.addActionListener(new ActionListener() {
+            @Override public void actionPerformed(ActionEvent e) {
+                DocumentDistributor dd = new DocumentDistributor(inv, "customer@example.com", new File("documents"));
+                if (dd.sendEmail()) {
+                    JOptionPane.showMessageDialog(dialog, "Email sent! Check the console.");
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + dd.getLastError());
+                }
             }
         });
 
-        JButton cmdClose = new Theme.HoneyButton("Close");
-        cmdClose.addActionListener(e -> dialog.dispose());
+        JButton cmdClosePopup = new Theme.HoneyButton("Close");
+        cmdClosePopup.addActionListener(new ActionListener() {
+            @Override public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
 
         btnPanel.add(cmdPdf);
         btnPanel.add(cmdEmail);
-        btnPanel.add(cmdClose);
+        btnPanel.add(cmdClosePopup);
         dialog.add(btnPanel, BorderLayout.SOUTH);
 
         dialog.setSize(400, 400);
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
+    }
+
+    private class GenerateButtonListener implements ActionListener {
+        @Override public void actionPerformed(ActionEvent e) {
+            generateInvoice();
+        }
+    }
+
+    private class RefreshButtonListener implements ActionListener {
+        @Override public void actionPerformed(ActionEvent e) {
+            retrieveOrderDetails();
+        }
+    }
+
+    private class CloseButtonListener implements ActionListener {
+        @Override public void actionPerformed(ActionEvent e) {
+            dispose();
+        }
     }
 }
