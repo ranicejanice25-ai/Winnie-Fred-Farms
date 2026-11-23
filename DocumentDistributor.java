@@ -29,16 +29,16 @@ public class DocumentDistributor {
 
     //Collaborators 
     private final Distributable document;
-    private final CustomerContactLookup contactLookup
-    private final MailTransport mailtransport; 
+    private final CustomerContactLookup contactLookup;
+    private final MailTransport mailTransport; 
     private final File outputDirectory;
 
     private File exportedFile;
     private String lastError;
 
-    public DocumentDistributor(Distributable document, CustomerContactLookup contactLookup, MailTransport mailtransport, File outputDirectory){
+    public DocumentDistributor(Distributable document, CustomerContactLookup contactLookup, MailTransport mailTransport, File outputDirectory){
         if (document == null){
-            throw new IllegalArgumentException("A document is required.")
+            throw new IllegalArgumentException("A document is required.");
         }
         this.document = document;
         this.documentID = document.getDocumentId();
@@ -56,7 +56,7 @@ public class DocumentDistributor {
         String email = (contactLookup == null) ? null: contactLookup.findCustomerEmail(documentID);
             if (email == null || email.trim().isEmpty()){
                 customerEmail = null;
-                lastError = "No customer email address is on file for this document."
+                lastError = "No customer email address is on file for this document.";
                     return "";
             }
             customerEmail = email.trim();
@@ -83,8 +83,8 @@ public class DocumentDistributor {
             distributionDate = new Date();
             return true;
         } catch (Exception e){
-            lastError = "The email could not be sent: " + e.getmessage();
-            return false 
+            lastError = "The email could not be sent: " + e.getMessage();
+            return false;
         }
     }
     /**
@@ -97,6 +97,7 @@ public class DocumentDistributor {
         try{
             Files.createDirectories(outputDirectory.toPath());
             String safeTitle = document.getTitle().replaceAll("[^A-Za-z0-9]+", "-");
+            File pdf = new File(outputDirectory, safeTitle + "-" + documentID + ".pdf");
             Files.write(pdf.toPath(), buildPdf(document.getTitle() + "#" + documentID, document.toDocumentLines()));
             exportedFile = pdf;
             return pdf;
@@ -130,7 +131,7 @@ public class DocumentDistributor {
     }
 
     public boolean isValidEmail(String address){
-        return address != null && EMAIL_FORMAT.matcher(address.trim().matches());
+        return address != null && EMAIL_FORMAT.matcher(address.trim()).matches();
     }
 
     //Helpers 

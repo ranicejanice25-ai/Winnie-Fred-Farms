@@ -19,7 +19,7 @@ public class DocumentDistributionDemo {
         MailTransport pretendMail = (to, subject, body, attachment) ->
                 System.out.println("Pretend send to " + to + " | " + subject + " | attachment " + attachment.getName());
 
-        DocumentDistribution dd = new DocumentDistribution(invoice, lookup, pretendMail, new File("documents"));
+        DocumentDistributor dd = new DocumentDistributor(invoice, lookup, pretendMail, new File("documents"));
 
         System.out.println("Contact: " + dd.retrieveCustomerContact());
         File pdf = dd.exportPDF();
@@ -31,10 +31,10 @@ public class DocumentDistributionDemo {
         System.out.println("Bad address sent: " + dd.sendEmail() + " -> " + dd.getLastError());
 
         MailTransport failingMail = (to, subject, body, attachment) -> { throw new Exception("connection refused"); };
-        DocumentDistribution failing = new DocumentDistribution(invoice, lookup, failingMail, new File("documents"));
+        DocumentDistributor failing = new DocumentDistributor(invoice, lookup, failingMail, new File("documents"));
         System.out.println("Mail failure sent: " + failing.sendEmail() + " -> " + failing.getLastError());
 
-        DocumentDistribution noEmail = new DocumentDistribution(invoice, id -> null, pretendMail, new File("documents"));
+        DocumentDistributor noEmail = new DocumentDistributor(invoice, id -> null, pretendMail, new File("documents"));
         System.out.println("No email on file sent: " + noEmail.sendEmail() + " -> " + noEmail.getLastError());
     }
 }
