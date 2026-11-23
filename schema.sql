@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS invoices (
     totalAmount REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS payments (
+    paymentID   INTEGER PRIMARY KEY,
+    orderID     INTEGER NOT NULL,
+    amountPaid  REAL NOT NULL,
+    method      TEXT,
+    paymentDate DATE NOT NULL    -- yyyy-MM-dd
+);
+
 -- Sample logins (password for all three: admin123)
 INSERT OR IGNORE INTO users VALUES ('harvest', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 1);
 INSERT OR IGNORE INTO users VALUES ('orders',  '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 2);

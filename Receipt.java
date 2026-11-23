@@ -1,6 +1,7 @@
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * This class contains everything that will appear on the payment receipt
@@ -39,103 +40,28 @@ public class Receipt implements Distributable {
     }
 
     /**
-     * Returns receipt ID
+     * Numeric document ID required by Distributable
      */
-    public String getReceiptID() {
-        return receiptID;
-    }
-
-    /**
-     *  Document ID is the receipt number.
-     */
-
     @Override
-    public String getDocumentID() {
-        return receiptID;
-    }
-
-    /**
-     * Returns company name
-     */
-
-    public String getCompanyName() {
-        return companyName;
-    }
-
-    /**
-     * Returns customer name
-     */
-
-    @Override
-    public String getCustomerName() {
-        return customerName;
-    }
-
-
-
-    /**
-    public String getCustomerName() {
-        return customerName;
-    }
-    */
-
-    /**
-     * Returns order ID
-     */
-
-    public String getOrderID() {
-        return orderID;
-    }
-
-    /**
-     * Returns amount paid
-     */
-
-    public BigDecimal getAmountPaid() {
-        return amountPaid;
-    }
-
-    /**
-     * Returns payment method
-     */
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    /**
-     * Returns balance that is remaining
-     */
-
-    public BigDecimal getRemainingBalance() {
-        return remainingBalance;
-    }
-
-    /**
-     * Returns payment date
-     */
-
-    public LocalDate getPaymentDate() {
-        return paymentDate;
-    }
-
-    /**
-     * Returns payment ID
-     */
-
-    public int getPaymentID() {
+    public int getDocumentId() {
         return paymentID;
     }
 
+    /**
+     * Short document name required by Distributable
+     */
+    @Override
+    public String getTitle() {
+        return "Receipt";
+    }
 
     /**
-     * Build's printable receipt text
+     * Lines printed into the exported PDF/document by DocumentDistribution
      */
-
     @Override
-    public String toText() {
+    public List<String> toDocumentLines() {
         DateTimeFormatter f = DateTimeFormatter.ofPattern("dd MMM yyyy");
-        return String.join("\n",
+        return List.of(
                 "==============================",
                 "  " + companyName,
                 "  PAYMENT RECEIPT",
@@ -147,6 +73,50 @@ public class Receipt implements Distributable {
                 "Method     : " + paymentMethod,
                 "Amount Paid: JMD " + amountPaid,
                 "Balance    : JMD " + remainingBalance,
-                "==============================");
+                "=============================="
+        );
+    }
+
+    /**
+     * Builds printable receipt text for ReceiptGenerator
+     */
+    public String toText() {
+        return String.join("\n", toDocumentLines());
+    }
+
+    public String getReceiptID() {
+        return receiptID;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public String getOrderID() {
+        return orderID;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public BigDecimal getRemainingBalance() {
+        return remainingBalance;
+    }
+
+    public LocalDate getPaymentDate() {
+        return paymentDate;
+    }
+
+    public int getPaymentID() {
+        return paymentID;
     }
 }

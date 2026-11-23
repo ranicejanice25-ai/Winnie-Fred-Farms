@@ -40,6 +40,11 @@ public class Main {
                 + "invoiceID INTEGER PRIMARY KEY, orderID INTEGER NOT NULL, "
                 + "invoiceDate DATE NOT NULL, totalAmount REAL NOT NULL)");
                 
+        // Payments logged against orders (used by SalesReport for "amount collected")
+        db.runSql("CREATE TABLE IF NOT EXISTS payments ("
+                + "paymentID INTEGER PRIMARY KEY, orderID INTEGER NOT NULL, amountPaid REAL NOT NULL, "
+                + "method TEXT, paymentDate DATE NOT NULL)");
+
         String hash = AuthManager.hash("admin123");
         db.insertRecord("INSERT OR IGNORE INTO users VALUES (?,?,?)", "harvest", hash, 1);
         db.insertRecord("INSERT OR IGNORE INTO users VALUES (?,?,?)", "orders", hash, 2);

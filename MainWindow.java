@@ -50,8 +50,11 @@ public class MainWindow extends JFrame {
         // Connect your Invoice Generator
         cmdInvoices.addActionListener(e -> new InvoiceGenerator(db).setVisible(true));
 
+        // Connect the Sales Report module
+        cmdReports.addActionListener(e -> new SalesReportWindow(db).setVisible(true));
+
         // Keep the placeholders for the other unfinished modules
-        for (JButton b : new JButton[]{cmdOrders, cmdReceipts, cmdReports}) {
+        for (JButton b : new JButton[]{cmdOrders, cmdReceipts}) {
             b.addActionListener(new OtherModuleListener(b.getText()));
         }
 
