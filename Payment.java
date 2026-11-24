@@ -24,6 +24,18 @@ public class Payment {
         this.paymentDate = LocalDateTime.now();
     }
 
+     /**
+     * This method stores payment details for a payment that was saved earlier with the date comeing from the database
+     */
+
+    public Payment(int paymentID, String orderID, BigDecimal amountPaid, String method, LocalDateTime paymentDate) {
+        this.paymentID = paymentID;
+        this.orderID = orderID;
+        this.amountPaid = amountPaid;
+        this.method = method;
+        this.paymentDate = paymentDate;
+    }
+
     /**
      * Returns payment ID
      */

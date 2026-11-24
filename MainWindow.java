@@ -46,19 +46,14 @@ public class MainWindow extends JFrame {
         });
 
         cmdInventory.addActionListener(new InventoryButtonListener());
-
-        cmdOrders.addActionListener(new OrdersButtonListener());
         
         // Connect your Invoice Generator
         cmdInvoices.addActionListener(e -> new InvoiceGenerator(db).setVisible(true));
 
-        // Connect the Sales Report module
-        cmdReports.addActionListener(e -> new SalesReportWindow(db).setVisible(true));
-
-        // Keep the placeholders for the other unfinished modules
-        for (JButton b : new JButton[]{cmdReceipts}) {
-            b.addActionListener(new OtherModuleListener(b.getText()));
-        }
+                /**
+                 * Connect the Receipt Generator 
+                 */ 
+        cmdReceipts.addActionListener(e -> new ReceiptGenerator(db).setVisible(true));
 
         setSize(400, 470);
         setLocationRelativeTo(null);
@@ -113,18 +108,11 @@ public class MainWindow extends JFrame {
         }
     }
 
-    private class OrdersButtonListener implements ActionListener {
+    
+    /** Opens the Receipt Generator screen. */
+    private class ReceiptsButtonListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
-            new OrderTracker(db).setVisible(true);
-        }
-    }
-
-    /** Placeholder for modules owned by other team members. */
-    private class OtherModuleListener implements ActionListener {
-        private final String name;
-        OtherModuleListener(String name) { this.name = name; }
-        @Override public void actionPerformed(ActionEvent e) {
-            JOptionPane.showMessageDialog(MainWindow.this, name + " module is not connected yet.");
+            new ReceiptGenerator(db).setVisible(true);
         }
     }
 
