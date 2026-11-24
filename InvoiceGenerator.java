@@ -225,7 +225,7 @@ public class InvoiceGenerator extends JFrame {
         JButton cmdPdf = new Theme.HoneyButton("Download PDF");
         cmdPdf.addActionListener(new ActionListener() {
             @Override public void actionPerformed(ActionEvent e) {
-                DocumentDistributor dd = new DocumentDistributor(inv, "customer@example.com", new File("documents"));
+                DocumentDistributor dd = new DocumentDistributor(inv, DatabaseCustomerContactLookup.forInvoices(db), null, new File("documents"));
                 try {
                     File f = dd.exportPDF();
                     JOptionPane.showMessageDialog(dialog, "PDF saved to:\n" + f.getAbsolutePath());

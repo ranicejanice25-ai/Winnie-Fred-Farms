@@ -50,6 +50,8 @@ public class MainWindow extends JFrame {
         // Connect your Invoice Generator
         cmdInvoices.addActionListener(e -> new InvoiceGenerator(db).setVisible(true));
 
+        cmdOrders.addActionListener(new OrdersButtonListener());
+
                 /**
                  * Connect the Receipt Generator 
                  */ 
@@ -113,6 +115,12 @@ public class MainWindow extends JFrame {
     private class ReceiptsButtonListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             new ReceiptGenerator(db).setVisible(true);
+        }
+    }
+
+     private class OrdersButtonListener implements ActionListener {
+        @Override public void actionPerformed(ActionEvent e) {
+            new OrderTracker(db).setVisible(true);
         }
     }
 

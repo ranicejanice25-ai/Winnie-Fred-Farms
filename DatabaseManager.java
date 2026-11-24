@@ -1,4 +1,5 @@
 import java.sql.*;
+import java.time.LocalDate;
 
 /** Data Access Layer: all other managers go through this class. */
 public class DatabaseManager {
@@ -125,6 +126,49 @@ public class DatabaseManager {
             o.getCustomerID(), o.getDateCreated().toString(), o.getQuantityOrdered(),
             o.getUnitCost(), o.getTotalCost(), o.getRemainingBalance(), o.getOrderStatus());
         return ok ? queryInt("SELECT last_insert_rowid()") : -1;
+    }
+
+        /** Returns the quantity in stock for an item, or -1 if the item isn't in inventory. */
+    public int getStock(String itemName) {
+        return queryInt("SELECT quantity FROM inventory WHERE itemName = ? COLLATE NOCASE", itemName);
+    }
+
+    /** Subtracts qty from stock. Returns false (and changes nothing) if there isn't enough. */
+    public boolean deductStock(String itemName, int qty) {
+        return updateRecord(
+            "UPDATE inventory SET quantity = quantity - ?, dateUpdated = ? "
+        + "WHERE itemName = ? COLLATE NOCASE AND quantity >= ?",
+            qty, LocalDate.now().toString(), itemName, qty);
+    }
+
+    /** Adds qty back to stock (used to undo a deduction if the order fails to save). */
+    public boolean restoreStock(String itemName, int qty) {
+        return updateRecord(
+            "UPDATE inventory SET quantity = quantity + ?, dateUpdated = ? "
+        + "WHERE itemName = ? COLLATE NOCASE",
+            qty, LocalDate.now().toString(), itemName);
+    }
+
+    /** Returns the unit price for an item, or -1 if it isn't in inventory. */
+    public double getUnitPrice(String itemName){
+        ResultSet rs = retrieveRecord(
+            "SELECT unitPrice FROM inventory WHERE itemName = ? COLLATE NOCASE", itemName);
+        if (rs == null) return -1;
+        Statement st = null;
+        try{
+            st = rs.getStatement();
+            return rs.next() ? rs.getDouble(1) : -1;
+        }catch (SQLException e){
+            lastError = e.getMessage();
+            return -1;
+        }finally{
+            try{
+                rs.close();
+            }catch(SQLException ignored){}
+            try{
+                if (st != null) st.close();
+            }catch(SQLException ignored){}
+        }
     }
 
     private boolean execute(String sql, Object... params) {

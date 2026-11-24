@@ -2,7 +2,6 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.io.File;
 
-public class Main {
     public static void main(String[] args) {
         Theme.apply();
 
@@ -57,16 +56,18 @@ public class Main {
         db.insertRecord("INSERT OR IGNORE INTO inventory VALUES (?,?,?,?,?)", 1, "Honey", 100, 3500.00, "2026-11-10");
 
         // Sample Data for testing Invoice Generation
-        db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 1, "John Brown", "john@example.com");
+        db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 1, "Jamir Johnson", "jamir.johnson@mymona.uwi.edu");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 2, "", "missing@example.com");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 3, "Anne Shirley", "anne@example.com");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 4, "Mary-Jane O'Connor", "mary-jane@example.com");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 5, "Lily Green", "lily@example.com");
-        db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 6, "Duke Walter", "duke@example.com");
+        db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 6, "Maya Ellis", "maya.ellis@mymona.uwi.edu");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 7, "Jason Jackson", "jay@example.com");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 8, "Wallace Steve", "steavie@example.com");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 9, "Alexandria Catherine Montgomery Kensington the 3rd", "alex@example.com");
-        
+ 
+      
+
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 1, 1, "2026-11-10", 3, 3500.00, 10500.00, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 2, 2, "2026-11-10", 2, 3500.00, 7000.00, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 3, 3, "2026-11-10", 5, 3500.00, 17500.00, 0, "COMPLETED");
@@ -77,4 +78,3 @@ public class Main {
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 8, 8, "2026-11-10", 2, 3000.654, 6001.31, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 9, 9, "2026-11-10", 1, 3500.00, 3500.00, 0, "COMPLETED");
     }
-}

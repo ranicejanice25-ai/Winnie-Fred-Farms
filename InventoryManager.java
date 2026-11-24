@@ -9,16 +9,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 public class InventoryManager extends JFrame {
-
     private int inventoryID;
     private String itemName;
     private int quantity;
     private float unitPrice;
-    private Date dateUpdated;
+    private LocalDate dateUpdated;
 
     private final DatabaseManager db;
     private final List<InventoryItem> cache = new ArrayList<>();
@@ -49,15 +47,15 @@ public class InventoryManager extends JFrame {
     }
 
     public boolean addInventory(String itemName, int quantity, float unitPrice) {
-        return addInventory(itemName, quantity, unitPrice, new Date());
+        return addInventory(itemName, quantity, unitPrice, LocalDate.now());
     }
 
-    public boolean addInventory(String itemName, int quantity, float unitPrice, Date batchDate) {
+    public boolean addInventory(String itemName, int quantity, float unitPrice, LocalDate batchDate) {
         if (!db.isConnected()) return false;
         if (!isValidItem(itemName, quantity, unitPrice) || quantity == 0) return false;
 
         String name = itemName.trim();
-        java.sql.Date day = new java.sql.Date(batchDate.getTime());
+        String day = batchDate.toString();
 
         InventoryItem existing = null;
         int maxId = 0;
@@ -77,9 +75,7 @@ public class InventoryManager extends JFrame {
                     maxId + 1, name, quantity, unitPrice, day);
         }
         if (ok) { 
-            this.itemName = name; this.quantity = quantity; this.unitPrice = unitPrice; this.dateUpdated = day; 
-            // SYNC PRICE: Update the price for all existing orders
-            db.updateRecord("UPDATE orders SET unitCost = ?", unitPrice);
+            this.itemName = name; this.quantity = quantity; this.unitPrice = unitPrice; this.dateUpdated = batchDate;
         }
         return ok;
     }
@@ -88,11 +84,9 @@ public class InventoryManager extends JFrame {
         if (!db.isConnected() || !isValidItem("x", quantity, unitPrice)) return false;
         boolean ok = db.updateRecord(
                 "UPDATE inventory SET quantity = ?, unitPrice = ?, dateUpdated = ? WHERE inventoryID = ?",
-                quantity, unitPrice, new java.sql.Date(new Date().getTime()), inventoryID);
+                quantity, unitPrice, LocalDate.now().toString(), inventoryID);
         if (ok) { 
-            this.inventoryID = inventoryID; this.quantity = quantity; this.unitPrice = unitPrice; 
-            // SYNC PRICE: Update the price for all existing orders
-            db.updateRecord("UPDATE orders SET unitCost = ?", unitPrice);
+            this.inventoryID = inventoryID; this.quantity = quantity; this.unitPrice = unitPrice;
         }
         return ok;
     }
@@ -111,10 +105,11 @@ public class InventoryManager extends JFrame {
                 return new ArrayList<>(cache);
             }
             while (rs.next()) {
+                String d=rs.getString(5);
                 items.add(new InventoryItem(rs.getInt(1), rs.getString(2), rs.getInt(3),
-                        rs.getFloat(4), rs.getDate(5)));
+                        rs.getFloat(4), d==null?null:LocalDate.parse(d)));
             }
-        } catch (SQLException e) {
+        } catch (SQLException |DateTimeParseException e){
             usingCache = true;
             return new ArrayList<>(cache);
         }
@@ -122,16 +117,6 @@ public class InventoryManager extends JFrame {
         cache.addAll(items);
         usingCache = false;
         return items;
-    }
-
-    public boolean deductStock(String itemName, int orderQuantity) {
-        for (InventoryItem it : retrieveInventory()) {
-            if (it.getItemName().equalsIgnoreCase(itemName)) {
-                if (orderQuantity <= 0 || orderQuantity > it.getQuantity()) return false;
-                return updateInventory(it.getInventoryID(), it.getQuantity() - orderQuantity, it.getUnitPrice());
-            }
-        }
-        return false;
     }
 
     private boolean isValidItem(String name, int qty, float price) {
@@ -181,9 +166,9 @@ public class InventoryManager extends JFrame {
         }
     }
 
-    private Date parseDate(String text) {
+    private LocalDate parseDate(String text) {
         try {
-            return java.sql.Date.valueOf(LocalDate.parse(text));
+            return LocalDate.parse(text);
         } catch (DateTimeParseException ex) {
             showError("Date must be a valid date in the format yyyy-MM-dd (e.g. 2026-12-12).");
             return null;
@@ -277,7 +262,7 @@ public class InventoryManager extends JFrame {
             if (qty == null) return;
             Float price = parsePrice(priceText, "Unit price");
             if (price == null) return;
-            Date batchDate = parseDate(dateText);
+            LocalDate batchDate = parseDate(dateText);
             if (batchDate == null) return;
 
             if (addInventory(name, qty, price, batchDate)) {
@@ -355,5 +340,5 @@ public class InventoryManager extends JFrame {
     public String getItemName() { return itemName; }
     public int getQuantity() { return quantity; }
     public float getUnitPrice() { return unitPrice; }
-    public Date getDateUpdated() { return dateUpdated; }
+    public LocalDate getDateUpdated() { return dateUpdated; }
 }

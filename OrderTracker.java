@@ -20,6 +20,9 @@ import java.util.ArrayList;
  * There is a button that allows an order to be saved, and one to cancel order creation.
  */
 public class OrderTracker extends JFrame{
+    private static final String PRODUCT = "Honey";
+    private String failureReason = "";
+
     private final DatabaseManager db;
     private final List<OrderRecord> cache = new ArrayList<>();
     private boolean usingCache = false;
@@ -46,22 +49,54 @@ public class OrderTracker extends JFrame{
         super("Winnie-Fred Farms - Order Tracker");
         this.db = db;
         buildGui();
+
+        double price=db.getUnitPrice(PRODUCT);
+        if(price >= 0)
+            txtUnitCost.setText(String.format("%.2f", price));  
+
         refreshTable(retrieveOrders());
     }
 
     public boolean addOrder(String customerName, String customerEmail,
         int quantityOrdered, double unitCost, LocalDate dateCreated){
-        if (!db.isConnected()) return false;
-        if (!isValidOrder(customerName, customerEmail, quantityOrdered, unitCost, dateCreated) || quantityOrdered == 0) return false;
+        failureReason="";
+        if (!db.isConnected()){
+            failureReason="Database is not connected.";
+            return false;
+        }
+        if (!isValidOrder(customerName, customerEmail, quantityOrdered, unitCost, dateCreated) || quantityOrdered == 0){
+            failureReason="Order details not valid.";
+            return false;
+        }
+
+        int stock=db.getStock(PRODUCT);
+        if (stock==-1){
+            failureReason = "Honey is not set up in inventory.";
+            return false;
+        }
+        if(quantityOrdered > stock){
+            failureReason = "Not enough stock: " + stock + " available, " + quantityOrdered + " ordered.";
+            return false;
+        }
 
         int customerID=db.findOrCreateCustomer(customerName.trim(), customerEmail);
-        if (customerID==-1)
+        if (customerID==-1){
+            failureReason="Could not save the customer.";
             return false;
+        }
+
+        if (!db.deductStock(PRODUCT, quantityOrdered)){
+            failureReason = "Not enough stock to fill this order.";
+            return false;
+        }
 
         OrderRecord order=new OrderRecord(customerID, dateCreated, quantityOrdered, unitCost);
         int orderID=db.insertOrder(order);
-        if (orderID==-1)
+        if (orderID==-1){
+            db.restoreStock(PRODUCT, quantityOrdered);
+            failureReason="Could not save the order.";
             return false;
+        }
 
         order.setOrderID(orderID);
         return true;
@@ -272,12 +307,16 @@ public class OrderTracker extends JFrame{
                 txtName.setText("");
                 txtEmail.setText("");
                 txtQuantity.setText("");
-                txtUnitCost.setText("");
+                double price = db.getUnitPrice(PRODUCT);
+                if(price>=0)
+                    txtUnitCost.setText(String.format("%.2f", price));
                 txtDate.setText(LocalDate.now().toString());
                 refreshTable(retrieveOrders());
-                lblStatus.setText("Saved order for " + name + ": " + qty + ".");
-            } else {
-                showError("Could not save the order record. Check the database connection.");
+
+                int stock=db.getStock(PRODUCT);
+                lblStatus.setText("Saved order for " + name + ": " + qty + ". Stock remaining:" + stock + (stock==0?"(out of stock)":"" + "."));
+            }else{
+                showError(failureReason.isEmpty()?"Could not save the order record. Check the database connection.":failureReason);
                 refreshTable(retrieveOrders());
             }
         }
