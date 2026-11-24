@@ -72,10 +72,16 @@ public class DocumentDistributor {
         lastError = null;
         try{
             if (customerEmail == null || customerEmail.trim().isEmpty()){
-                retrieveCustomerContact();
+                if (retrieveCustomerContact().isEmpty()){
+                    return false; // keep the specific "no address on file" message
+                }
             }
             if (!isValidEmail(customerEmail)){
                 lastError = "The customer's email address is missing or not in a valid format.";
+                return false;
+            }
+            if (mailTransport == null){
+                lastError = "Email is not set up yet. Create mail.properties from mail.properties.example.";
                 return false;
             }
             File pdf = (exportedFile != null && exportedFile.exists()) ? exportedFile : exportPDF();
@@ -135,10 +141,10 @@ public class DocumentDistributor {
     }
 
     //Helpers 
-    private String subject(){
-        return document.getTitle() + "+" + documentID + " from " + COMPANY_NAME;
+    public String subject(){
+        return document.getTitle() + "#" + documentID + " from " + COMPANY_NAME;
     }
-    private String bodyText(){
+    public String bodyText(){
         return "Hello,\n\nPlease find your " + document.getTitle().toLowerCase() + " (#" + documentID + ") attached as a PDF.\n\nThank you,\n" + COMPANY_NAME;
     }
 
