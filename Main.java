@@ -31,10 +31,13 @@ public class Main {
 
         db.runSql("CREATE TABLE IF NOT EXISTS customers ("
                 + "customerID INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT)");
+        db.runSql("CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_email "
+                + "ON customers(email COLLATE NOCASE)");
                 
         db.runSql("CREATE TABLE IF NOT EXISTS orders ("
                 + "orderID INTEGER PRIMARY KEY, customerID INTEGER NOT NULL, orderDate DATE NOT NULL, "
-                + "orderStatus TEXT NOT NULL, totalAmount REAL NOT NULL, quantity INTEGER, unitCost REAL)");
+                + "quantity INTEGER, unitCost REAL, totalAmount REAL NOT NULL, balance REAL, "
+                + "orderStatus TEXT NOT NULL)");
                 
         db.runSql("CREATE TABLE IF NOT EXISTS invoices ("
                 + "invoiceID INTEGER PRIMARY KEY, orderID INTEGER NOT NULL, "
@@ -64,14 +67,14 @@ public class Main {
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 8, "Wallace Steve", "steavie@example.com");
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 9, "Alexandria Catherine Montgomery Kensington the 3rd", "alex@example.com");
         
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 1, 1, "2026-11-10", "COMPLETED", 10500.00, 3, 3500.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 2, 2, "2026-11-10", "COMPLETED", 7000.00, 2, 3500.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 3, 3, "2026-11-10", "COMPLETED", 17500.00, 5, 3500.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 4, 4, "2026-11-10", "COMPLETED", 7000.00, 2, 3500.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 5, 5, "2026-11-10", "COMPLETED", 3500.00, 1, 3500.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 6, 6, "2026-11-10", "COMPLETED", 24000.00, 4, 4000.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 7, 7, "2026-11-10", "COMPLETED", 7000.00, 2, 3500.00);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 8, 8, "2026-11-10", "COMPLETED", 6001.31, 2, 3000.654);
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?)", 9, 9, "2026-11-10", "COMPLETED", 3500.00, 1, 3500.00);
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 1, 1, "2026-11-10", 3, 3500.00, 10500.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 2, 2, "2026-11-10", 2, 3500.00, 7000.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 3, 3, "2026-11-10", 5, 3500.00, 17500.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 4, 4, "2026-11-10", 2, 3500.00, 7000.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 5, 5, "2026-11-10", 1, 3500.00, 3500.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 6, 6, "2026-11-10", 4, 4000.00, 24000.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 7, 7, "2026-11-10", 2, 3500.00, 7000.00, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 8, 8, "2026-11-10", 2, 3000.654, 6001.31, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 9, 9, "2026-11-10", 1, 3500.00, 3500.00, 0, "COMPLETED");
     }
 }
