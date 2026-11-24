@@ -234,15 +234,26 @@ public class InvoiceGenerator extends JFrame {
                 }
             }
         });
-
+        
         JButton cmdEmail = new Theme.HoneyButton("Email Customer");
         cmdEmail.addActionListener(new ActionListener() {
             @Override public void actionPerformed(ActionEvent e) {
-                DocumentDistributor dd = new DocumentDistributor(inv, "customer@example.com", new File("documents"));
-                if (dd.sendEmail()) {
-                    JOptionPane.showMessageDialog(dialog, "Email sent! Check the console.");
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "Error: " + dd.getLastError());
+                DocumentDistributor dd = new DocumentDistributor(
+                    inv, DatabaseCustomerContactLookup.forInvoices(db), null,
+                    new File(System.getProperty("user.home"), "Winnie-Fred-Farms/Invoices")
+                );
+                String[] choices = {"Gmail", "Outlook", "Mail app"};
+                int pick = JOptionPane.showOptionDialog(dialog, "Open the email in:", "Email Customer",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, choices, choices[0]);
+                if (pick < 0) return; // closed the dialog
+                try {
+                    String to = dd.retrieveCustomerContact(); // blank if none on file; user can type it in
+                    File pdf = dd.exportPDF();
+                    EmailPortal.open(EmailPortal.Provider.values()[pick], to, dd.subject(), dd.bodyText(), pdf);
+                    JOptionPane.showMessageDialog(dialog,
+                        "Your email window is open. Attach the PDF shown in the folder window, then send.");
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Could not open email: " + ex.getMessage());
                 }
             }
         });
