@@ -57,6 +57,8 @@ public class MainWindow extends JFrame {
                  */ 
         cmdReceipts.addActionListener(e -> new ReceiptGenerator(db).setVisible(true));
 
+        cmdReports.addActionListener(e -> new SalesReportWindow(db).setVisible(true));
+
         setSize(400, 470);
         setLocationRelativeTo(null);
     }

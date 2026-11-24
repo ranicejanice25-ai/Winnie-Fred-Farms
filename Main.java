@@ -2,6 +2,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.io.File;
 
+public class Main { 
     public static void main(String[] args) {
         Theme.apply();
 
@@ -78,3 +79,4 @@ import java.io.File;
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 8, 8, "2026-11-10", 2, 3000.654, 6001.31, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 9, 9, "2026-11-10", 1, 3500.00, 3500.00, 0, "COMPLETED");
     }
+}
