@@ -46,7 +46,17 @@ public class MainWindow extends JFrame {
         });
 
         cmdInventory.addActionListener(new InventoryButtonListener());
-        for (JButton b : new JButton[]{cmdOrders, cmdInvoices, cmdReceipts, cmdReports}) {
+
+        cmdOrders.addActionListener(new OrdersButtonListener());
+        
+        // Connect your Invoice Generator
+        cmdInvoices.addActionListener(e -> new InvoiceGenerator(db).setVisible(true));
+
+        // Connect the Sales Report module
+        cmdReports.addActionListener(e -> new SalesReportWindow(db).setVisible(true));
+
+        // Keep the placeholders for the other unfinished modules
+        for (JButton b : new JButton[]{cmdReceipts}) {
             b.addActionListener(new OtherModuleListener(b.getText()));
         }
 
@@ -100,6 +110,12 @@ public class MainWindow extends JFrame {
     private class InventoryButtonListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             new InventoryManager(db).setVisible(true);
+        }
+    }
+
+    private class OrdersButtonListener implements ActionListener {
+        @Override public void actionPerformed(ActionEvent e) {
+            new OrderTracker(db).setVisible(true);
         }
     }
 
