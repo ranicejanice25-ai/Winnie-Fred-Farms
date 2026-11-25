@@ -104,7 +104,8 @@ public class DatabaseManager {
     }
 
     /**
-     * Checks if a customer exists in the database utilisng customer ID as the primary key, adding them to the database if not
+     * Checks if a customer exists in the database utilisng customer ID as the
+     * primary key, adding them to the database if not
      * @param name name of customer to be checked for
      * @param email email of customer to be checked for
      * @return the ID of the customer
@@ -128,7 +129,34 @@ public class DatabaseManager {
         return ok ? queryInt("SELECT last_insert_rowid()") : -1;
     }
 
-        /** Returns the quantity in stock for an item, or -1 if the item isn't in inventory. */
+    /**
+     * Overwrites an existing order row. Returns false if no row matched.
+     * @param o the order record to be edited
+     * @return boolean depending on if a record was found*/
+    public boolean updateOrder(OrderRecord o){
+        return updateRecord(
+            "UPDATE orders SET customerID = ?, orderDate = ?, quantity = ?, unitCost = ?, "
+        + "totalAmount = ?, balance = ?, orderStatus = ? WHERE orderID = ?",
+            o.getCustomerID(), o.getDateCreated().toString(), o.getQuantityOrdered(),
+            o.getUnitCost(), o.getTotalCost(), o.getRemainingBalance(),
+            o.getOrderStatus(), o.getOrderID());
+    }
+
+    /**
+     * Changes a customer's name (affects every order for that customer).
+     * @param customerID the ID of the customer whose information is to be updated
+     * @param name the name of the customer whose information is to be updated
+     * @return boolean depending on if a customer's information was updated
+     */
+    public boolean updateCustomerName(int customerID, String name){
+        return updateRecord("UPDATE customers SET name = ? WHERE customerID = ?", name, customerID);
+    }
+
+    /**
+     * Returns the quantity in stock for an item, or -1 if the item isn't in inventory.
+     * @param itemName the name of the stock item
+     * @return the quantity of the identified stock item
+     */
     public int getStock(String itemName) {
         return queryInt("SELECT quantity FROM inventory WHERE itemName = ? COLLATE NOCASE", itemName);
     }

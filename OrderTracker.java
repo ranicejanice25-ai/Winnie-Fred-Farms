@@ -20,8 +20,10 @@ import java.util.ArrayList;
  * There is a button that allows an order to be saved, and one to cancel order creation.
  */
 public class OrderTracker extends JFrame{
-    private static final String PRODUCT = "Honey";
-    private String failureReason = "";
+    private static final String PRODUCT="Honey";
+    private String failureReason="";
+    private int editingOrderID=0;
+    
 
     private final DatabaseManager db;
     private final List<OrderRecord> cache = new ArrayList<>();
@@ -29,11 +31,15 @@ public class OrderTracker extends JFrame{
 
     private final JTextField txtName = new JTextField(25);
     private final JTextField txtEmail = new JTextField(25);
+    private final JTextField txtDate = new JTextField(LocalDate.now().toString(), 9);
     private final JTextField txtQuantity = new JTextField(6);
     private final JTextField txtUnitCost = new JTextField(6);
-    private final JTextField txtDate = new JTextField(LocalDate.now().toString(), 9);
+    
+
     private final JButton cmdAdd = new Theme.HoneyButton("Save Order");
     private final JButton cmdCalcTotal = new Theme.HoneyButton("Calculate Total");
+    private final JButton cmdNew = new Theme.HoneyButton("New Order");
+    
     private final JButton cmdDelete = new Theme.HoneyButton("Delete Order");
     private final JButton cmdSortDate = new Theme.HoneyButton("Sort by Date");
     private final JButton cmdSortAmount = new Theme.HoneyButton("Sort by Quantity");
@@ -102,6 +108,46 @@ public class OrderTracker extends JFrame{
         return true;
     }
 
+    public boolean updateOrder(int orderID, String customerName, String customerEmail,
+        int quantityOrdered, double unitCost, LocalDate dateCreated) {
+        failureReason = "";
+        if (!db.isConnected()) { failureReason = "Database is not connected."; return false; }
+        if (!isValidOrder(customerName, customerEmail, quantityOrdered, unitCost, dateCreated)) {
+            failureReason = "Order details are not valid.";
+            return false;
+        }
+
+        OrderRecord old = findOrder(orderID);
+        if (old == null) { failureReason = "That order no longer exists."; return false; }
+
+        int customerID = db.findOrCreateCustomer(customerName.trim(), customerEmail);
+        if (customerID == -1) { failureReason = "Could not save the customer."; return false; }
+        db.updateCustomerName(customerID, customerName.trim());
+
+        // Adjust stock by the difference in quantity
+        int diff = quantityOrdered - old.getQuantityOrdered();
+        if (diff > 0 && !db.deductStock(PRODUCT, diff)) {
+            failureReason = "Not enough stock for the extra " + diff + " bottle(s).";
+            return false;
+        }
+        if (diff < 0) db.restoreStock(PRODUCT, -diff);
+
+        // Recalculate totals, keeping whatever has already been paid
+        OrderRecord updated = new OrderRecord(customerID, dateCreated, quantityOrdered, unitCost);
+        updated.setOrderID(orderID);
+        double paid = old.getTotalCost() - old.getRemainingBalance();
+        double newBalance = Math.round((updated.getTotalCost() - paid) * 100) / 100.0;
+        updated.setRemainingBalance(newBalance);   // also refreshes the status
+
+        if (!db.updateOrder(updated)) {
+            if (diff > 0) db.restoreStock(PRODUCT, diff);        // undo the stock change
+            else if (diff < 0) db.deductStock(PRODUCT, -diff);
+            failureReason = "Could not update the order.";
+            return false;
+        }
+        return true;
+    }
+
     public boolean deleteOrder(int orderID){
         if (!db.isConnected()) return false;
         return db.deleteRecord("DELETE FROM orders WHERE orderID = ?", orderID);
@@ -141,6 +187,40 @@ public class OrderTracker extends JFrame{
         cache.addAll(items);
         usingCache=false;
         return items;
+    }
+
+    private OrderRecord findOrder(int id) {
+        for (OrderRecord o : retrieveOrders()) {
+            if (o.getOrderID() == id) return o;
+        }
+        return null;
+    }
+
+    private void loadOrderIntoForm(int row) {
+        int id = (Integer) model.getValueAt(row, 0);
+        OrderRecord o = findOrder(id);
+        if (o == null) return;
+
+        editingOrderID = id;
+        txtName.setText(o.getCustomerName());
+        txtEmail.setText(o.getCustomerEmail());
+        txtDate.setText(o.getDateCreated().toString());
+        txtQuantity.setText(String.valueOf(o.getQuantityOrdered()));
+        txtUnitCost.setText(String.format("%.2f", o.getUnitCost()));
+        cmdAdd.setText("Update Order");
+        lblStatus.setText("Editing order " + id + ". Click New Order to cancel.");
+    }
+
+    private void resetForm() {
+        editingOrderID = 0;
+        table.clearSelection();
+        txtName.setText("");
+        txtEmail.setText("");
+        txtQuantity.setText("");
+        txtDate.setText(LocalDate.now().toString());
+        double price = db.getUnitPrice(PRODUCT);
+        txtUnitCost.setText(price >= 0 ? String.format("%.2f", price) : "");
+        cmdAdd.setText("Save Order");
     }
 
     private boolean isValidOrder(String name, String email, int qty, double cost, LocalDate date){
@@ -237,6 +317,7 @@ public class OrderTracker extends JFrame{
         pnlActions.setOpaque(false);
         pnlActions.add(cmdAdd);
         pnlActions.add(cmdCalcTotal);
+        pnlActions.add(cmdNew);
 
         JPanel pnlInput = new JPanel(new BorderLayout());
         pnlInput.setOpaque(false);
@@ -274,10 +355,17 @@ public class OrderTracker extends JFrame{
 
         cmdAdd.addActionListener(new AddOrderListener());
         cmdCalcTotal.addActionListener(new CalcTotalListener());
+        cmdNew.addActionListener(e -> resetForm());
         cmdDelete.addActionListener(new DeleteOrderListener());
         cmdSortDate.addActionListener(new SortDateListener());
         cmdSortAmount.addActionListener(new SortAmountListener());
         cmdClose.addActionListener(new CloseButtonListener());
+
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting())return;
+            int row = table.getSelectedRow();
+            if (row >= 0) loadOrderIntoForm(row);
+        });
 
         setSize(900, 500);
         setLocationRelativeTo(null);
@@ -303,20 +391,22 @@ public class OrderTracker extends JFrame{
             LocalDate orderDate = parseDate(dateText);
             if (orderDate == null) return;
 
-            if (addOrder(name, email, qty, unitCost, orderDate)){
-                txtName.setText("");
-                txtEmail.setText("");
-                txtQuantity.setText("");
-                double price = db.getUnitPrice(PRODUCT);
-                if(price>=0)
-                    txtUnitCost.setText(String.format("%.2f", price));
-                txtDate.setText(LocalDate.now().toString());
-                refreshTable(retrieveOrders());
+            boolean editing = editingOrderID != 0;
+            int id = editingOrderID;
+            boolean ok = editing
+                    ? updateOrder(id, name, email, qty, unitCost, orderDate)
+                    : addOrder(name, email, qty, unitCost, orderDate);
 
-                int stock=db.getStock(PRODUCT);
-                lblStatus.setText("Saved order for " + name + ": " + qty + ". Stock remaining:" + stock + (stock==0?"(out of stock)":"" + "."));
-            }else{
-                showError(failureReason.isEmpty()?"Could not save the order record. Check the database connection.":failureReason);
+            if (ok) {
+                resetForm();
+                refreshTable(retrieveOrders());
+                int left = db.getStock(PRODUCT);
+                lblStatus.setText((editing ? "Updated order " + id : "Saved order for " + name)
+                        + ". Stock remaining: " + left + ".");
+            } else {
+                showError(failureReason.isEmpty()
+                        ? "Could not save the order record. Check the database connection."
+                        : failureReason);
                 refreshTable(retrieveOrders());
             }
         }
@@ -335,13 +425,14 @@ public class OrderTracker extends JFrame{
     }
 
     private class DeleteOrderListener implements ActionListener {
-        @Override public void actionPerformed(ActionEvent e) {
+        @Override public void actionPerformed(ActionEvent e){
             int row = table.getSelectedRow();
             if (row < 0){showError("Select an order record to remove."); return;}
 
             int id = (Integer) model.getValueAt(row, 0);
             int choice = JOptionPane.showConfirmDialog(OrderTracker.this,
                     "Remove order record " + id + "?", "Confirm", JOptionPane.YES_NO_OPTION);
+            if (id == editingOrderID) resetForm();
             if (choice != JOptionPane.YES_OPTION) return;
             if (!deleteOrder(id)) showError("Could not remove the record. Check the database connection.");
             refreshTable(retrieveOrders());
