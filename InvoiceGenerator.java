@@ -189,7 +189,7 @@ public class InvoiceGenerator extends JFrame {
         JPanel header = Theme.header("Winnie-Fred Farms", "Invoice #" + inv.getInvoiceID());
         dialog.add(header, BorderLayout.NORTH);
 
-        JPanel body = new JPanel(new GridLayout(8, 2, 10, 10)); // Changed 6 to 8
+        JPanel body = new JPanel(new GridLayout(8, 2, 10, 10));
         body.setBackground(Theme.CREAM);
         body.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
 
