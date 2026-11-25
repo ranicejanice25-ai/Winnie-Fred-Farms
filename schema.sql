@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS customers (
     email      TEXT
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_email ON customers(email COLLATE NOCASE);
+
 CREATE TABLE IF NOT EXISTS orders (
     orderID     INTEGER PRIMARY KEY,
     customerID  INTEGER NOT NULL,
@@ -47,12 +49,21 @@ CREATE TABLE IF NOT EXISTS payments (
     paymentDate DATE NOT NULL    -- yyyy-MM-dd
 );
 
+CREATE TABLE IF NOT EXISTS receipts (
+    receiptID   INTEGER PRIMARY KEY,
+    orderID     INTEGER NOT NULL,
+    paymentID   INTEGER NOT NULL,
+    receiptDate DATE NOT NULL
+);
+
 -- Sample logins (password for all three: admin123)
 INSERT OR IGNORE INTO users VALUES ('harvest', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 1);
 INSERT OR IGNORE INTO users VALUES ('orders',  '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 2);
 INSERT OR IGNORE INTO users VALUES ('finance', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 3);
 
--- Sample Data for testing Invoice Generation
+INSERT OR IGNORE INTO inventory VALUES (1, 'Honey', 30, 3500.00, '2026-11-10');
+
+-- Sample Data for testing
 INSERT OR IGNORE INTO customers VALUES (1, 'John Brown', 'john@example.com');
 INSERT OR IGNORE INTO customers VALUES (2, '', 'missing@example.com'); 
 INSERT OR IGNORE INTO customers VALUES (3, 'Anne Shirley', 'anne@example.com');
@@ -63,7 +74,6 @@ INSERT OR IGNORE INTO customers VALUES (7, 'Jason Jackson', 'jay@example.com');
 INSERT OR IGNORE INTO customers VALUES (8, 'Wallace Steve', 'steavie@example.com');
 INSERT OR IGNORE INTO customers VALUES (9, 'Alexandria Catherine Montgomery Kensington the 3rd', 'alex@example.com');
 
--- Orders matching the Test Schedule (TC-02 01 to 09)
 INSERT OR IGNORE INTO orders VALUES (1, 1, '2026-11-10', 3, 3500.00, 10500.00, 0, 'COMPLETED');
 INSERT OR IGNORE INTO orders VALUES (2, 2, '2026-11-10', 2, 3500.00, 7000.00, 0, 'COMPLETED');
 INSERT OR IGNORE INTO orders VALUES (3, 3, '2026-11-10', 5, 3500.00, 17500.00, 0, 'COMPLETED');
@@ -71,5 +81,5 @@ INSERT OR IGNORE INTO orders VALUES (4, 4, '2026-11-10', 2, 3500.00, 7000.00, 0,
 INSERT OR IGNORE INTO orders VALUES (5, 5, '2026-11-10', 1, 3500.00, 3500.00, 0, 'COMPLETED');
 INSERT OR IGNORE INTO orders VALUES (6, 6, '2026-11-10', 4, 4000.00, 24000.00, 0, 'COMPLETED');
 INSERT OR IGNORE INTO orders VALUES (7, 7, '2026-11-10', 2, 3500.00, 7000.00, 0, 'COMPLETED');
-INSERT OR IGNORE INTO orders VALUES (8, 8, '2026-11-10', 2, 3000.654, 6001.31, 0, 'COMPLETED');
+INSERT OR IGNORE INTO orders VALUES (8, 8, '2026-11-10', 2, 1000.654, 2001.31, 0, 'COMPLETED');
 INSERT OR IGNORE INTO orders VALUES (9, 9, '2026-11-10', 1, 3500.00, 3500.00, 0, 'COMPLETED');

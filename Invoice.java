@@ -38,6 +38,9 @@ public class Invoice implements Distributable {
     @Override
     public List<String> toDocumentLines() {
         List<String> lines = new ArrayList<>();
+        lines.add("Company: Winnie-Fred Farms");
+        lines.add("Address: Crescent, Horsefording Bonny Gate, St. Mary");
+        lines.add("--------------------------------------------------");
         lines.add("Customer: " + customerName);
         lines.add("Order Reference: " + orderID);
         lines.add("Date: " + (invoiceDate != null ? invoiceDate : "-"));
