@@ -31,13 +31,6 @@ public class ReceiptGenerator extends JFrame {
                     + "LEFT JOIN invoices i ON i.orderID = o.orderID "
                     + "ORDER BY o.orderID";
 
-    /**
-     * Temporary email sender that only prints to the console.
-     * Replace it with the team's JdkSmtpMailTransport to send real email.
-     */
-    private static final MailTransport MAIL = (to, subject, body, attachment) ->
-            System.out.println("Pretend send to " + to + " | " + subject + " | attachment " + attachment.getName());
-
     private final DatabaseManager db;
     private final JTable table;
     private final DefaultTableModel model;
@@ -268,7 +261,7 @@ public class ReceiptGenerator extends JFrame {
         dialog.add(area, BorderLayout.CENTER);
 
         DocumentDistributor distributor = new DocumentDistributor(receipt,
-                DatabaseCustomerContactLookup.forReceipts(db), MAIL, new File("documents"));
+                DatabaseCustomerContactLookup.forReceipts(db), null, new File("documents"));
 
         JButton cmdPdf = new Theme.HoneyButton("Download PDF");
         cmdPdf.addActionListener(e -> {
@@ -282,10 +275,19 @@ public class ReceiptGenerator extends JFrame {
 
         JButton cmdEmail = new Theme.HoneyButton("Email Customer");
         cmdEmail.addActionListener(e -> {
-            if (distributor.sendEmail()) {
-                JOptionPane.showMessageDialog(dialog, "Email sent to " + distributor.getCustomerEmail() + "! Check the console.");
-            } else {
-                JOptionPane.showMessageDialog(dialog, "Error: " + distributor.getLastError());
+            String[] choices = {"Gmail", "Outlook", "Mail app"};
+            int pick = JOptionPane.showOptionDialog(dialog, "Open the email in:", "Email Customer",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, choices, choices[0]);
+            if (pick < 0) return; // closed the dialog
+            
+            try {
+                String to = distributor.retrieveCustomerContact(); // blank if none on file
+                File pdf = distributor.exportPDF();
+                EmailPortal.open(EmailPortal.Provider.values()[pick], to, distributor.subject(), distributor.bodyText(), pdf);
+                JOptionPane.showMessageDialog(dialog,
+                    "Your email window is open. Attach the PDF shown in the folder window, then send.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Could not open email: " + ex.getMessage());
             }
         });
 

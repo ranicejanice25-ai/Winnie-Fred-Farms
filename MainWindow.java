@@ -112,14 +112,6 @@ public class MainWindow extends JFrame {
         }
     }
 
-    
-    /** Opens the Receipt Generator screen. */
-    private class ReceiptsButtonListener implements ActionListener {
-        @Override public void actionPerformed(ActionEvent e) {
-            new ReceiptGenerator(db).setVisible(true);
-        }
-    }
-
      private class OrdersButtonListener implements ActionListener {
         @Override public void actionPerformed(ActionEvent e) {
             new OrderTracker(db).setVisible(true);

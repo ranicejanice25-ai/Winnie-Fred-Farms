@@ -13,7 +13,6 @@ public class InvoiceGenerator extends JFrame {
     private int invoiceID;
     private int orderID;
     private Date invoiceDate;
-    private float totalAmount;
 
     private final DatabaseManager db;
     private final JTable table;
@@ -143,7 +142,6 @@ public class InvoiceGenerator extends JFrame {
                     this.invoiceID = rs.getInt("invoiceID");
                     String dateStr = rs.getString("invoiceDate");
                     this.invoiceDate = java.sql.Date.valueOf(dateStr);
-                    this.totalAmount = total;
                     
                     Invoice existingInv = new Invoice(invoiceID, orderID, customer, invoiceDate, qty, price, total);
                     showInvoicePopup(existingInv);
@@ -171,7 +169,6 @@ public class InvoiceGenerator extends JFrame {
             if (success) {
                 this.invoiceID = newID;
                 this.invoiceDate = new Date();
-                this.totalAmount = total;
                 
                 retrieveOrderDetails();
                 Invoice newInv = new Invoice(invoiceID, orderID, customer, invoiceDate, qty, price, total);

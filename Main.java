@@ -54,7 +54,7 @@ public class Main {
         db.insertRecord("INSERT OR IGNORE INTO users VALUES (?,?,?)", "finance", hash, 3);
 
         // --- NEW: Seed the inventory table with Honey and a default price ---
-        db.insertRecord("INSERT OR IGNORE INTO inventory VALUES (?,?,?,?,?)", 1, "Honey", 100, 3500.00, "2026-11-10");
+        db.insertRecord("INSERT OR IGNORE INTO inventory VALUES (?,?,?,?,?)", 1, "Honey", 30, 3500.00, "2026-11-10");
 
         // Sample Data for testing Invoice Generation
         db.insertRecord("INSERT OR IGNORE INTO customers VALUES (?,?,?)", 1, "Jamir Johnson", "jamir.johnson@mymona.uwi.edu");
@@ -76,7 +76,7 @@ public class Main {
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 5, 5, "2026-11-10", 1, 3500.00, 3500.00, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 6, 6, "2026-11-10", 4, 4000.00, 24000.00, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 7, 7, "2026-11-10", 2, 3500.00, 7000.00, 0, "COMPLETED");
-        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 8, 8, "2026-11-10", 2, 3000.654, 6001.31, 0, "COMPLETED");
+        db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 8, 8, "2026-11-10", 2, 1000.654, 2001.31, 0, "COMPLETED");
         db.insertRecord("INSERT OR IGNORE INTO orders VALUES (?,?,?,?,?,?,?,?)", 9, 9, "2026-11-10", 1, 3500.00, 3500.00, 0, "COMPLETED");
     }
 }
